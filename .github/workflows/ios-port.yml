@@ -34,12 +34,15 @@ jobs:
           ctest --test-dir ios/build-host --output-on-failure
           python3 -m unittest discover -s ios/tests -v
       - name: Build arm64 iPhone app and unsigned IPA
+        id: device
         run: bash ios/scripts/build.sh iphoneos
       - name: Build simulator app
         run: bash ios/scripts/build.sh iphonesimulator
       - name: Launch simulator and verify native UI bridge
+        timeout-minutes: 7
         run: bash ios/scripts/simulator-smoke.sh
       - name: Upload development artifact
+        if: always() && steps.device.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ios-port-development-unsigned

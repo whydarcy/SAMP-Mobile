@@ -6,12 +6,18 @@ ClientRuntime::ClientRuntime(std::unique_ptr<GameBackend> backend, Emit emit)
     : backend_(std::move(backend)), emit_(std::move(emit)) {
     if (backend_) backend_->setEventSink([this](const Json& event) {
         if (ready_ && !paused_) emit_(event);
+        else {
+            const size_t bytes = event.dump(-1, ' ', false, Json::error_handler_t::replace).size();
+            if (pending_.size() < 128 && bytes <= 524288 - pendingBytes_) {
+                pending_.push_back(event); pendingBytes_ += bytes;
+            } else overflow_ = true;
+        }
     });
 }
 ClientRuntime::~ClientRuntime() { if (backend_) backend_->setEventSink({}); }
 Json ClientRuntime::status() const {
     const bool available = backend_ && backend_->available();
-    return {{"platform", "iOS"}, {"protocol", 1}, {"gameAvailable", available},
+    return {{"platform", "iOS"}, {"protocol", 1}, {"gameAvailable", available}, {"eventOverflow", overflow_},
         {"reason", available ? "" : backend_ ? backend_->unavailableReason()
             : "iOS GTA backend is not linked. Game world and server join are unavailable."}};
 }
@@ -45,6 +51,7 @@ void ClientRuntime::receive(const std::string& text) {
         if (event == "Ui.Ready") {
             ready_ = true;
             reply(id, true, status());
+            flush();
             emit_({{"event", "State"}, {"args", Json::array({state()})}});
             emit_({{"event", "Client.Status"}, {"args", Json::array({status()})}});
         } else if (event == "Ui.RequestState") reply(id, true, state());
@@ -62,11 +69,16 @@ void ClientRuntime::receive(const std::string& text) {
 }
 void ClientRuntime::tick() {
     if (paused_) return;
-    if (backend_ && backend_->available()) backend_->tick();
+    if (backend_) backend_->tick();
     if (ready_) emit_({{"event", "State"}, {"args", Json::array({state()})}});
 }
 void ClientRuntime::pause(bool paused) {
     paused_ = paused;
     if (backend_) backend_->setPaused(paused);
+    if (!paused && ready_) flush();
+}
+void ClientRuntime::flush() {
+    auto events = std::move(pending_); pending_.clear(); pendingBytes_ = 0;
+    for (const auto& event : events) emit_(event);
 }
 }

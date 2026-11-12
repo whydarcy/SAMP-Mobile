@@ -5,6 +5,7 @@ This is the first native iOS target, NOT a playable GTA/SA-MP client yet.
 Implemented:
 - Shared C++20 RakNet client transport, built from the existing client sources without JNI, Android logging, ShadowHook, EGL, GLES or Android BASS.
 - Existing Sile packet 215 decoder and a validated JSON UI bridge reused by the portable client.
+- Server UI events are buffered until web UI readiness and while backgrounded; authorization dialogs are not discarded during initialization. Byte-boundary bit reads no longer depend on undefined C++ evaluation order.
 - UIKit/Objective-C++ app, transparent WKWebView overlay, local resource scheme with case-aware Sile asset lookup, native keyboard requests, modal/hit-region input routing and background pause handling.
 - Explicit GameBackend boundary for a version-specific iOS GTA renderer, pools, RPC/ClientJoin, input and state. Without it the app reports disconnected and rejects game commands.
 - macOS GitHub Actions builds and tests the portable core, builds device and simulator apps, and packages an **unsigned development IPA**.
@@ -16,7 +17,7 @@ Not implemented / not verified:
 - No playable world, multiplayer join, player/vehicle sync, collision/streaming integration or in-game iOS controls yet.
 - No native Cohtml runtime. This target uses WKWebView; imported Sile assets need WebKit runtime verification.
 - No Apple signing certificate/profile provided. The unsigned IPA needs valid signing before installation.
-- No iPhone hardware test yet. C++ checks run on the existing Android emulator do not prove iOS compatibility; the Actions result is recorded separately.
+- No iPhone hardware test yet. Device and simulator compilation, macOS contracts and a real simulator launch with WKWebView-to-C++ message dispatch passed on GitHub Actions: https://github.com/whydarcy/SAMP-Mobile/actions/runs/43181346452 . This verifies the development host, not GTA gameplay.
 
 GitHub search findings:
 - https://github.com/slavpoznyakow486-sketch/samp-ios-project — early skeleton; Renderer.mm only logs a message, GameViewController.mm attempts to include Android main.cpp. Not a working game backend.

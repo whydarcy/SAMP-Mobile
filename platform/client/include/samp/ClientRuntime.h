@@ -1,6 +1,7 @@
 #pragma once
 #include "GameBackend.h"
 #include <memory>
+#include <deque>
 namespace samp {
 class ClientRuntime {
 public:
@@ -14,7 +15,11 @@ private:
     std::unique_ptr<GameBackend> backend_;
     Emit emit_;
     bool ready_ = false, paused_ = false;
+    std::deque<Json> pending_;
+    size_t pendingBytes_ = 0;
+    bool overflow_ = false;
     Json state() const;
     void reply(int id, bool ok, const Json& value);
+    void flush();
 };
 }
