@@ -1,0 +1,54 @@
+name: Publish iOS direct download
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/ios-port']
+    paths: ['.github/workflows/ios-download.yml']
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: ios-development-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - name: Fetch verified iOS build
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-port-development-unsigned
+          path: bundle
+          run-id: 43182628804
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish direct IPA download
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
+          source=Path('bundle/output/SampIOS-unsigned.ipa')
+          expected='a77ef2d3f5eb5f87d578b889b49bea5e2cbb44e0e129a5fa9f81eae682d5f283'
+          assert hashlib.sha256(source.read_bytes()).hexdigest()==expected, 'IPA hash mismatch'
+          Path('SampIOS-development-unsigned.ipa').write_bytes(source.read_bytes())
+          Path('release-notes.md').write_text(
+              'Техническая сборка iOS-порта для проверки нативного ядра и UI-моста.\n\n'
+              '**Игровой движок GTA, мир и вход на сервер пока отсутствуют.**\n\n'
+              'IPA без подписи Apple. Для установки потребуется подписать приложение.\n\n'
+              'Проверены сборка для arm64 iPhone и запуск в iOS-симуляторе.\n', encoding='utf-8')
+          PY
+          tag='ios-port-development-20261112'
+          commit='42789fcf2d61e013bb95998cc6e3355e39708f8c'
+          if gh release view "$tag" --json targetCommitish --jq .targetCommitish > target.txt 2>/dev/null; then
+            test "$(cat target.txt)" = "$commit"
+          else
+            gh release create "$tag" --target "$commit" --prerelease --latest=false \
+              --title 'iOS: техническая сборка 0.1.0' --notes-file release-notes.md
+          fi
+          gh release upload "$tag" SampIOS-development-unsigned.ipa --clobber
+          gh release view "$tag" --json url,assets --jq '{url,assets:[.assets[]|{name,url,size}]}'
