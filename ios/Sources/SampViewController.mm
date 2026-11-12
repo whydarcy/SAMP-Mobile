@@ -112,6 +112,13 @@
     NSArray* args = packet[@"args"];
     NSDictionary* arg = args.count && [args[0] isKindOfClass:NSDictionary.class] ? args[0] : @{};
     NSString* event = packet[@"event"];
+    if ([event isEqualToString:@"Ui.Ready"]) {
+        // Development smoke-test marker, containing no device or account identifiers.
+        std::string report = _runtime->status().dump();
+        NSString* documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+        NSData* marker = [NSData dataWithBytes:report.data() length:report.size()];
+        [marker writeToFile:[documents stringByAppendingPathComponent:@"ios-port-ui.json"] atomically:YES];
+    }
     if ([event isEqualToString:@"Ui.Focus"]) {
         _web.modal = [arg[@"active"] boolValue];
         if (!_web.modal) [self.view endEditing:YES];

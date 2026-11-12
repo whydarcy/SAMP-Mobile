@@ -14,7 +14,8 @@ add_executable(SampIOS MACOSX_BUNDLE Sources/main.mm Sources/SampViewController.
     Sources/LocalAssets.mm)
 target_include_directories(SampIOS PRIVATE Sources)
 target_compile_options(SampIOS PRIVATE -fobjc-arc)
-target_link_libraries(SampIOS PRIVATE samp_client_core "-framework UIKit" "-framework WebKit")
+target_link_libraries(SampIOS PRIVATE samp_client_core "-framework UIKit" "-framework WebKit"
+    "-framework Foundation" "-framework CoreGraphics")
 set_target_properties(SampIOS PROPERTIES
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_LIST_DIR}/Info.plist.in"
     MACOSX_BUNDLE_GUI_IDENTIFIER "${SAMP_BUNDLE_ID}"

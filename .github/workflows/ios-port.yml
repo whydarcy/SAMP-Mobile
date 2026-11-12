@@ -19,6 +19,14 @@ jobs:
           persist-credentials: false
       - name: Check Apple toolchain
         run: xcodebuild -version
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build and test shared UI for Safari and Android
+        run: |
+          npm --prefix webui ci
+          npm --prefix webui test
+          npm --prefix webui run build
       - name: Compile and test portable client on macOS
         run: |
           cmake -S platform/client -B ios/build-host -DCMAKE_BUILD_TYPE=Debug
@@ -29,6 +37,8 @@ jobs:
         run: bash ios/scripts/build.sh iphoneos
       - name: Build simulator app
         run: bash ios/scripts/build.sh iphonesimulator
+      - name: Launch simulator and verify native UI bridge
+        run: bash ios/scripts/simulator-smoke.sh
       - name: Upload development artifact
         uses: actions/upload-artifact@v4
         with:
@@ -36,5 +46,7 @@ jobs:
           path: |
             ios/output/SampIOS-unsigned.ipa
             ios/PORT-STATUS.md
+            ios/output/simulator.png
+            ios/output/ios-port-ui.json
           if-no-files-found: error
           retention-days: 7
