@@ -26,7 +26,11 @@
 #include "MTUSize.h"
 #include "SAMP/samp_netencr.h"
 
+#if defined(SAMP_PORTABLE_NETWORK)
+#include "RakNetHost.h"
+#else
 #include "main.h"
+#endif
 
 #ifdef _WIN32
 #include <process.h>

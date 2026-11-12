@@ -18,7 +18,11 @@
 #include "RakPeer.h"
 #include "NetworkTypes.h"
 
+#if defined(SAMP_PORTABLE_NETWORK)
+#include "RakNetHost.h"
+#else
 #include "main.h"
+#endif
 
 #ifdef __USE_IO_COMPLETION_PORTS
 #include "AsynchronousFileIO.h"

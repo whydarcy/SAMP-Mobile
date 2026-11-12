@@ -1,0 +1,40 @@
+name: iOS port
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/ios-port']
+    paths: ['ios/**', 'platform/client/**', '.github/workflows/ios-port.yml', 'app/src/main/cpp/samp/vendor/raknet/**', 'app/src/main/cpp/samp/net/SileUiWire.h']
+permissions:
+  contents: read
+concurrency:
+  group: ios-port-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check Apple toolchain
+        run: xcodebuild -version
+      - name: Compile and test portable client on macOS
+        run: |
+          cmake -S platform/client -B ios/build-host -DCMAKE_BUILD_TYPE=Debug
+          cmake --build ios/build-host --parallel 3
+          ctest --test-dir ios/build-host --output-on-failure
+          python3 -m unittest discover -s ios/tests -v
+      - name: Build arm64 iPhone app and unsigned IPA
+        run: bash ios/scripts/build.sh iphoneos
+      - name: Build simulator app
+        run: bash ios/scripts/build.sh iphonesimulator
+      - name: Upload development artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-port-development-unsigned
+          path: |
+            ios/output/SampIOS-unsigned.ipa
+            ios/PORT-STATUS.md
+          if-no-files-found: error
+          retention-days: 7

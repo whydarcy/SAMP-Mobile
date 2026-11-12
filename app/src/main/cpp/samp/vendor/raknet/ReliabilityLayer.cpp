@@ -22,7 +22,11 @@
 #include "Rand.h"
 #include "PacketEnumerations.h"
 
+#if defined(SAMP_PORTABLE_NETWORK)
+#include "RakNetHost.h"
+#else
 #include "main.h"
+#endif
 
 // alloca
 #ifdef _COMPATIBILITY_1
@@ -1000,6 +1004,10 @@ void ReliabilityLayer::Update( SOCKET s, PlayerID playerId, int MTUSize, RakNetT
 		// SHOW - dead connection
 		// printf("The connection has been lost.\n");
 		// We've waited a very long time for a reliable packet to get an ack and it never has
+        FLog("[SAMP.Net] ACK timeout elapsedMs=%lld pending=%u resent=%u ackRx=%u tx=%u rx=%u",
+            (long long)((time-lastAckTime)/1000), (unsigned)resendList.Size(),
+            statistics.messageResends, statistics.acknowlegementsReceived,
+            statistics.packetsSent, statistics.packetsReceived);
 		deadConnection = true;
 		return;
 	}

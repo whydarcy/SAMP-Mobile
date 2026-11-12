@@ -4,7 +4,11 @@
 	Updated to 0.3.7 by P3ti
 */
 
+#if defined(SAMP_PORTABLE_NETWORK)
+#include "RakNetHost.h"
+#else
 #include "..//..//..//main.h"
+#endif
 
 int dblSpace;
 char buf[131072];

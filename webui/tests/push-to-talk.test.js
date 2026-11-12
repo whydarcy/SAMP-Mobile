@@ -1,0 +1,8 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createPushToTalk} from '../src/push-to-talk.js';
+function fixture(send){const events=[],states=[],timers=new Map();let next=0;const ptt=createPushToTalk(value=>{events.push(value);return send?.(value);},value=>states.push(value),fn=>{timers.set(++next,fn);return next;},id=>timers.delete(id));return {ptt,events,states,timers};}
+test('voice starts only on explicit hold, renews its lease and stops on release',()=>{const f=fixture();assert.deepEqual(f.events,[]);f.ptt.start();f.ptt.start();assert.deepEqual(f.events,[true]);[...f.timers.values()][0]();assert.deepEqual(f.events,[true,true]);f.ptt.stop();assert.deepEqual(f.events,[true,true,false]);assert.equal(f.timers.size,0);assert.equal(f.ptt.isHeld(),false);});
+test('repeated cancel does not restart voice or emit an extra recording event',()=>{const f=fixture();f.ptt.start();f.ptt.stop();f.ptt.stop();assert.deepEqual(f.events,[true,false]);assert.equal(f.states.at(-1),false);});
+test('rejected permission or bridge request releases voice and its timer',async()=>{const f=fixture(value=>value?Promise.reject(Error('permission denied')):undefined);f.ptt.start();await new Promise(r=>setTimeout(r,0));assert.equal(f.ptt.isHeld(),false);assert.equal(f.timers.size,0);assert.deepEqual(f.events,[true,false]);});
+test('a late response cannot reactivate voice after pointer cancellation',async()=>{let resolve;const f=fixture(value=>value?new Promise(r=>resolve=r):undefined);f.ptt.start();f.ptt.stop();resolve(true);await Promise.resolve();assert.equal(f.ptt.isHeld(),false);assert.deepEqual(f.events,[true,false]);});

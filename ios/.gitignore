@@ -1,0 +1,8 @@
+/build-*/
+/output/
+/.generated/
+/private-engine/
+*.p12
+*.mobileprovision
+*.ipa
+*.app/

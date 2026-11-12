@@ -1,0 +1,32 @@
+cmake_minimum_required(VERSION 3.22)
+project(SampPortableClient LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+get_filename_component(SAMP_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
+set(SAMP_NATIVE "${SAMP_ROOT}/app/src/main/cpp/samp")
+set(RAKNET "${SAMP_NATIVE}/vendor/raknet")
+set(RAKNET_FILES BitStream.cpp CheckSum.cpp DataBlockEncryptor.cpp DataCompressor.cpp
+    DS_HuffmanEncodingTree.cpp GetTime.cpp InternalPacketPool.cpp LinuxStrings.cpp
+    NetworkTypes.cpp PluginInterface.cpp RakClient.cpp RakPeer.cpp RakSleep.cpp
+    Rand.cpp ReliabilityLayer.cpp rijndael.cpp RPCMap.cpp SHA1.cpp SimpleMutex.cpp
+    SocketLayer.cpp StringCompressor.cpp StringTable.cpp SAMP/samp_netencr.cpp)
+list(TRANSFORM RAKNET_FILES PREPEND "${RAKNET}/")
+add_library(samp_transport STATIC ${RAKNET_FILES} src/NetworkLog.cpp src/RakTransport.cpp)
+target_include_directories(samp_transport PUBLIC include PRIVATE "${RAKNET}" "${CMAKE_CURRENT_LIST_DIR}/compat")
+target_compile_definitions(samp_transport PRIVATE SAMP_PORTABLE_NETWORK=1 RAKSAMP_CLIENT=1
+    NETCODE_CONNCOOKIELULZ=0x6969 HOST_ENDIAN_IS_LITTLE=1)
+find_package(Threads REQUIRED)
+target_link_libraries(samp_transport PUBLIC Threads::Threads)
+if(WIN32)
+  target_link_libraries(samp_transport PRIVATE ws2_32)
+endif()
+add_library(samp_client_core STATIC src/ClientRuntime.cpp)
+target_include_directories(samp_client_core PUBLIC include "${SAMP_NATIVE}/vendor" "${SAMP_NATIVE}/net")
+target_link_libraries(samp_client_core PUBLIC samp_transport)
+option(SAMP_BUILD_TESTS "Build portable client contract tests" ON)
+if(SAMP_BUILD_TESTS)
+  enable_testing()
+  add_executable(samp_core_tests tests/ClientTests.cpp)
+  target_link_libraries(samp_core_tests PRIVATE samp_client_core)
+  add_test(NAME samp_core_contracts COMMAND samp_core_tests)
+endif()

@@ -18,7 +18,11 @@
 #include "PacketEnumerations.h"
 #include "GetTime.h"
 
+#if defined(SAMP_PORTABLE_NETWORK)
+#include "RakNetHost.h"
+#else
 #include "main.h"
+#endif
 
 #ifdef _MSC_VER
 #pragma warning( push )
@@ -558,6 +562,7 @@ void RakClient::AdvertiseSystem( const char *host, unsigned short remotePort, co
 
 RakNetStatisticsStruct* const RakClient::GetStatistics( void )
 {
+	if (!remoteSystemList || !remoteSystemList[0].isActive) return nullptr;
 	return RakPeer::GetStatistics( remoteSystemList[ 0 ].playerId );
 }
 
